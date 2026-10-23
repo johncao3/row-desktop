@@ -1,0 +1,11 @@
+{
+  "version": "1.02",
+  "publicReleaseApproved": false,
+  "softwareLicense": { "status": "pending", "evidence": "" },
+  "sources": [
+    { "name": "Tencent quotes", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
+    { "name": "CoinLore API", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
+    { "name": "ESPN scoreboard", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
+    { "name": "Team logos", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" }
+  ]
+}

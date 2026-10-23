@@ -1,0 +1,30 @@
+# Build outputs and release assets belong outside source control.
+*.exe
+*.pdb
+*.zip
+*.lnk
+/dist/
+/release-staging/
+
+# Personal state, desktop item identifiers and diagnostics.
+settings.json
+desktop-layout-backup.json
+*check.txt
+self-test.txt
+error-log*.txt
+data-check.json
+preview*.png
+live-*.png
+*.log
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.user
+.vs/
+.idea/
+
+# Maintainer-only authorization correspondence, if added later.
+/private/
