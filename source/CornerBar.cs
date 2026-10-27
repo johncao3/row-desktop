@@ -26,8 +26,8 @@ public class Settings {
     public string Theme = "auto", Monitor = "";
 }
 public class Item {
-    public string Key,Day; public string Group, Name, Value, Detail, Source, SourceTime, Url; public string Home, Away, HomeLogo, AwayLogo, Status;
-    public double? Change;
+    public string HomeId,AwayId,League; public DateTime StartTime; public string Key,Day; public string Group, Name, Value, Detail, Source, SourceTime, Url; public string Home, Away, HomeLogo, AwayLogo, Status;
+    public double? Change,Price; public string PeriodScores,ScoreMargin,Phase,FootballEvents;
     public int Rank;
 }
 public class Batch {
@@ -41,7 +41,7 @@ public static class Feed {
     static HttpClient MakeClient() {
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
         var c = new HttpClient(); c.Timeout = TimeSpan.FromSeconds(14);
-        c.DefaultRequestHeaders.UserAgent.ParseAdd("ROW/1.02 (personal desktop ticker)"); return c;
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("ROW/1.05 (personal desktop ticker)"); return c;
     }
     public static object Json(string s) { return new JavaScriptSerializer { MaxJsonLength=8388608 }.DeserializeObject(s); }
     public static object Get(object obj, params string[] path) {
@@ -60,7 +60,7 @@ public static class Feed {
             string[] f = m.Groups[1].Value.Split('~'); if (f.Length < 34) throw new Exception("无效代码或行情格式变化：" + code);
             double price = Number(f[3]), change = Number(f[32]); if (price <= 0) throw new Exception("行情价格无效：" + code);
             bool index=code.StartsWith("sh000",StringComparison.OrdinalIgnoreCase)||code.StartsWith("sz399",StringComparison.OrdinalIgnoreCase)||code.StartsWith("us.",StringComparison.OrdinalIgnoreCase)||f[2].StartsWith(".");
-            result.Add(new Item { Key="stock:"+code.ToLowerInvariant(), Group=group, Name=f[1], Value=(index?"":group=="A股"?"¥":"$")+price.ToString("N2"), Change=change,
+            result.Add(new Item { Key="stock:"+code.ToLowerInvariant(), Group=group, Name=f[1], Value=(index?"":group=="A股"?"¥":"$")+price.ToString("N2"), Change=change, Price=price,
                 Detail=(index?"指数点数":code.ToUpperInvariant())+" · 较前收盘", Source="腾讯行情", SourceTime=f[30],
                 Url="https://gu.qq.com/"+code });
         } return result;
@@ -71,7 +71,7 @@ public static class Feed {
         foreach (object coin in Arr(Json(text))) {
             string symbol = S(Get(coin,"symbol")), id=S(Get(coin,"id")); if(legacy&&id=="")id=symbol=="BTC"?"90":symbol=="ETH"?"80":""; if(!ids.Contains(id))continue;
             double price=Number(Get(coin,"price_usd")); if (price<=0) throw new Exception("币价无效");
-            result.Add(new Item { Key="coin:"+id, Group="加密", Name=symbol, Value="$"+price.ToString(price<1?"0.########":"N2"), Change=Number(Get(coin,"percent_change_24h")),
+            result.Add(new Item { Key="coin:"+id, Group="加密", Name=symbol, Value="$"+price.ToString(price<1?"0.########":"N2"), Change=Number(Get(coin,"percent_change_24h")),Price=price,
                 Detail="USD · 过去24小时", Source="CoinLore", SourceTime="未提供报价时刻", Url="https://www.coinlore.com/coin/"+S(Get(coin,"nameid")) });
         }
         if (result.Select(x=>x.Key).Distinct().Count()!=ids.Length) throw new Exception("所选币种数据不完整"); return result;
@@ -106,8 +106,8 @@ public static class Feed {
             else if(state=="post") status="已结束";
             else if(state=="in") status=S(Get(ev,"status","type","name")).Contains("HALFTIME")?"中场休息":"进行中 · "+S(Get(ev,"status","displayClock"))+" / "+S(Get(ev,"status","period"))+ (group=="NBA"?"节":"半场");
             string value=state=="pre"?"VS":S(Get(home,"score"))+" : "+S(Get(away,"score"));
-            result.Add(new Item { Key="game:"+group+":"+S(Get(ev,"id")), Day=hasDate?date.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd"):"", Group=group, Name=Team(home)+" · "+Team(away), Value=value,
-                Home=Team(home), Away=Team(away), HomeLogo=S(Get(home,"team","logo")), AwayLogo=S(Get(away,"team","logo")), Status=state=="in"?(S(Get(ev,"status","type","name")).Contains("HALFTIME")?"中场":group=="NBA"?"Q"+S(Get(ev,"status","period"))+" "+S(Get(ev,"status","displayClock")):S(Get(ev,"status","displayClock"))):state=="post"?"完场":hasDate?date.ToOffset(TimeSpan.FromHours(8)).ToString("MM-dd HH:mm"):"待定", Detail=leagueName+" · "+status, Source="ESPN", SourceTime=hasDate?"开赛 "+date.ToOffset(TimeSpan.FromHours(8)).ToString("MM-dd HH:mm")+" 北京时间":"",
+            result.Add(new Item { Key="game:"+group+":"+S(Get(ev,"id")), HomeId=S(Get(home,"team","id")), AwayId=S(Get(away,"team","id")), League=leagueName, StartTime=hasDate?date.UtcDateTime:DateTime.MaxValue, Day=hasDate?date.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd"):"", Group=group, Name=Team(home)+" · "+Team(away), Value=value,
+                PeriodScores=DetailData.Periods(home,away),ScoreMargin=DetailData.Margin(home,away,state),Phase=status,FootballEvents=DetailData.Events(comp,home,away),Home=Team(home), Away=Team(away), HomeLogo=S(Get(home,"team","logo")), AwayLogo=S(Get(away,"team","logo")), Status=state=="in"?(S(Get(ev,"status","type","name")).Contains("HALFTIME")?"中场":group=="NBA"?"Q"+S(Get(ev,"status","period"))+" "+S(Get(ev,"status","displayClock")):S(Get(ev,"status","displayClock"))):state=="post"?"完场":hasDate?date.ToOffset(TimeSpan.FromHours(8)).ToString("MM-dd HH:mm"):"待定", Detail=leagueName+" · "+status, Source="ESPN", SourceTime=hasDate?"开赛 "+date.ToOffset(TimeSpan.FromHours(8)).ToString("MM-dd HH:mm")+" 北京时间":"",
                 Rank=state=="in"?0:state=="pre"?1:2, Url=S(Get(Arr(Get(ev,"links")).FirstOrDefault(),"href")) });
         } return result.OrderBy(x=>x.Rank).ToList();
     }
@@ -155,16 +155,16 @@ static class Program {
         #if DOCK_TEST
         args=new[]{"--dock-test"};
         #endif
-        DesktopDock.EnableDpi();Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);Application.ThreadException+=(o,e)=>{Bar.ReportError(e.Exception);if(args.Length>0)Environment.Exit(1);MessageBox.Show("操作未完成，请关闭当前窗口后重试。记录已保存到 crash-log.txt。", "ROW");};DesktopDock.EnableDpi();Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
         var settings=new Settings();string file=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"settings.json");
         try{if(File.Exists(file))settings=new JavaScriptSerializer().Deserialize<Settings>(File.ReadAllText(file));}catch{ }
         if(settings==null)settings=new Settings();
         if(settings.Version<2){var codes=Feed.Tokens(settings.Stocks??new Settings().Stocks);settings.Stocks=string.Join(",",codes.Where(c=>!c.StartsWith("us",StringComparison.OrdinalIgnoreCase)).Concat(new[]{"us.INX","us.IXIC","us.DJI"}).Concat(codes.Where(c=>c.StartsWith("us",StringComparison.OrdinalIgnoreCase))).Distinct(StringComparer.OrdinalIgnoreCase));settings.Top=true;settings.Compact=false;settings.Theme="auto";settings.Opacity=100;settings.Version=2;}
-        if(settings.Slots==null||settings.Slots.Count!=5)settings.Slots=new Settings().Slots;settings.Version=102;
+        if(settings.Slots==null||settings.Slots.Count!=5||settings.Slots.Any(s=>s==null||string.IsNullOrEmpty(s.Key)||string.IsNullOrEmpty(s.Group)))settings.Slots=new Settings().Slots;settings.Version=105;
         if(args.Length>0&&args[0]=="--catalog-check"){var coins=MarketCatalog.Coins().GetAwaiter().GetResult();var probe=new Settings{Stocks="sh600519,sz000001,usTSLA,usQQQ",CryptoIds="90,80,58"};var batches=Task.WhenAll(Feed.Jobs(probe)).GetAwaiter().GetResult();File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"catalog-check.txt"),"Coin catalog: "+coins.Count+"; XRP="+coins.Any(c=>c.Key=="coin:58")+Environment.NewLine+string.Join(Environment.NewLine,batches.Select(b=>b.Group+" "+b.Source+": "+b.Items.Count+" items "+b.Error)));if(batches.Any(b=>b.Error!=""))Environment.ExitCode=1;return;}
         if(args.Length>0&&args[0]=="--check") {Batch[] batches=Task.WhenAll(Feed.Jobs(settings)).GetAwaiter().GetResult();File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"data-check.json"),new JavaScriptSerializer().Serialize(batches),Encoding.UTF8);Environment.ExitCode=batches.Any(b=>b.Error!="")?1:0;return;}
         if(args.Length>0&&args[0]=="--desktop-check"){try{File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"desktop-check.txt"),new DesktopIcons().Inspect());}catch(Exception ex){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"desktop-check.txt"),ex.ToString());Environment.ExitCode=1;}return;}
-        if(args.Length>0&&args[0]=="--self-test"){SelfTest();return;}
+        if(args.Length>0&&args[0]=="--interaction-test"){using(var test=new Bar(settings,false))test.VerifyInteractions(AppDomain.CurrentDomain.BaseDirectory);return;} if(args.Length>1&&args[0]=="--detail-test"){using(var test=new Bar(settings,false))test.VerifyDetailFixtures(args[1],AppDomain.CurrentDomain.BaseDirectory);return;} if(args.Length>0&&args[0]=="--sports-layout-test"){using(var test=new Bar(settings,false))test.VerifySportsLayout(AppDomain.CurrentDomain.BaseDirectory);return;} if(args.Length>0&&args[0]=="--self-test"){SelfTest();return;}
         if(args.Length>0&&args[0]=="--dock-test"){using(var testBar=new Bar(settings)){testBar.StartDockVerification(AppDomain.CurrentDomain.BaseDirectory);Application.Run(testBar);}return;}
         if(args.Length>0&&args[0]=="--selection-test"){using(var test=new Bar(settings,false)){test.VerifySelections(AppDomain.CurrentDomain.BaseDirectory);}return;}
         if(args.Length>0&&args[0]=="--preview"){using(var preview=new Bar(settings,false)){preview.CreateControl();preview.VerifyAndCapture(AppDomain.CurrentDomain.BaseDirectory);}return;}
@@ -173,7 +173,7 @@ static class Program {
             finally{mutex.ReleaseMutex();}
         }
     }
-    static void SelfTest(){
+    static void SelfTest(){ DetailData.Verify(); Bar.VerifyAwareness();
         var tests=new List<string>();
         if(MarketCatalog.Normalize("600519")!="sh600519"||MarketCatalog.Normalize("AAPL")!="usAAPL"||MarketCatalog.Normalize("sz000001")!="sz000001")throw new Exception("stock normalization");
         var parsed=Feed.ParseCoins("[{\"id\":\"58\",\"symbol\":\"XRP\",\"price_usd\":\"0.123456\",\"percent_change_24h\":\"2.4\"}]",new[]{"58"});if(parsed.Single().Key!="coin:58"||!parsed.Single().Value.Contains("123456"))throw new Exception("arbitrary crypto and small price");

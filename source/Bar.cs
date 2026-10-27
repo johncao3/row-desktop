@@ -45,12 +45,12 @@ public partial class Bar : Form {
     protected override bool ShowWithoutActivation{get{return true;}}
     public Bar(Settings s):this(s,true){}
     public Bar(Settings s,bool live){
-        settings=s;interactive=live;Text="ROW 1.02";Icon=Brand.LoadIcon();Font=new Font("Microsoft YaHei UI",9);AutoScaleMode=AutoScaleMode.None;
+        settings=s;interactive=live;Text="ROW 1.05";Icon=Brand.LoadIcon();Font=new Font("Microsoft YaHei UI",9);AutoScaleMode=AutoScaleMode.None;
         BackColor=Bg;ForeColor=Ink;FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;DoubleBuffered=true;StartPosition=FormStartPosition.Manual;
         callback=DesktopDock.RegisterWindowMessage("ROW.Appbar.101");taskbarRestart=DesktopDock.RegisterWindowMessage("TaskbarCreated");
         var menu=new ContextMenuStrip();menu.Items.Add("显示 / 隐藏  Ctrl+Alt+B",null,(o,e)=>Toggle());menu.Items.Add("设置与自选",null,(o,e)=>Configure());
         menu.Items.Add("暂停 / 开启轮播",null,(o,e)=>{settings.Rotate=!settings.Rotate;Save();Invalidate();});menu.Items.Add("退出",null,(o,e)=>Close());ContextMenuStrip=menu;menu.Font=new Font("Microsoft YaHei UI",9);menu.ShowImageMargin=false;menu.Opening+=(o,e)=>{menu.Renderer=new MenuRenderer(new Palette(Light));};
-        tray=new NotifyIcon{Icon=Icon,Text="ROW 1.02 · Ctrl+Alt+B 显示 / 隐藏",Visible=live,ContextMenuStrip=menu};tray.MouseClick+=(o,e)=>{if(e.Button==MouseButtons.Left)ShowMenu(true);};
+        tray=new NotifyIcon{Icon=Icon,Text="ROW 1.05 · Ctrl+Alt+B 显示 / 隐藏",Visible=live,ContextMenuStrip=menu};tray.MouseClick+=(o,e)=>{if(e.Button==MouseButtons.Left)ShowMenu(true);};
         refreshTimer.Interval=60000;refreshTimer.Tick+=async(o,e)=>{if(!closing)await RefreshFeeds();};
         rotateTimer.Interval=12000;rotateTimer.Tick+=(o,e)=>{if(settings.Rotate&&!Bounds.Contains(Cursor.Position)){page++;Invalidate();}};
         layoutTimer.Interval=2000;layoutTimer.Tick+=(o,e)=>{if(closing)return;BackColor=Bg;Invalidate();if(registered&&Visible){DesktopDock.SetWindowPos(Handle,new IntPtr(-1),0,0,0,0,0x13);desktopIcons.Avoid(Bounds,DesktopDock.WorkArea(SelectedScreen.Bounds));DesktopDock.KeepWindowsBelow(Handle,Bounds,SelectedScreen.Bounds,IntPtr.Zero);}};
@@ -97,8 +97,12 @@ public partial class Bar : Form {
     protected override void Dispose(bool disposing){if(disposing){closing=true;ReleaseDock();refreshTimer.Dispose();rotateTimer.Dispose();layoutTimer.Dispose();tip.Dispose();foreach(var img in logos.Values)img.Dispose();logos.Clear();if(panel!=null)panel.Close();if(IsHandleCreated)DesktopDock.UnregisterHotKey(Handle,1);if(tray!=null){tray.Visible=false;tray.Dispose();tray=null;}}base.Dispose(disposing);}
     public async Task RefreshFeeds(){
         if(refreshing||closing)return;refreshing=true;lastAttempt=Feed.Now;Invalidate();
-        try{Batch[] fresh=await Task.WhenAll(Feed.Jobs(settings));if(closing)return;foreach(Batch b in fresh)Feed.RetainLastKnown(b,data);data=fresh.ToList();await LoadLogos();}
-        finally{refreshing=false;if(!closing&&!IsDisposed)Invalidate();}
+        try{
+            var pending=Feed.Jobs(settings).ToList();var sources=new HashSet<string>();
+            while(pending.Count>0){var done=await Task.WhenAny(pending);pending.Remove(done);Batch b=await done;if(closing)return;sources.Add(b.Group+"|"+b.Source);ApplyBatch(b);Invalidate();}
+            data.RemoveAll(b=>!sources.Contains(b.Group+"|"+b.Source));await LoadLogos();
+        }
+        catch(Exception ex){ReportError(ex);}finally{refreshing=false;if(!closing&&!IsDisposed)Invalidate();}
     }
     public async Task VerifyDock(string folder){
         string iconsBefore=desktopIcons.Inspect();var report=new List<string>();Rectangle screen=SelectedScreen.Bounds,before=DesktopDock.WorkArea(screen);

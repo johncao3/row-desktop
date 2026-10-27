@@ -6,9 +6,9 @@ using System.Reflection;
 using System.Windows.Forms;
 [assembly: AssemblyTitle("ROW")]
 [assembly: AssemblyProduct("ROW Desktop Bar")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
-[assembly: AssemblyInformationalVersion("1.02")]
+[assembly: AssemblyVersion("1.5.0.0")]
+[assembly: AssemblyFileVersion("1.5.0.0")]
+[assembly: AssemblyInformationalVersion("1.05")]
 namespace CornerBar {
 internal static class Brand {
     internal static readonly Color Orange=Color.FromArgb(255,99,43);

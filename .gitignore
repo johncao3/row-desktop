@@ -12,8 +12,10 @@ desktop-layout-backup.json
 *check.txt
 self-test.txt
 error-log*.txt
+crash-log.txt
 data-check.json
 preview*.png
+sports-*.png
 live-*.png
 *.log
 .env
