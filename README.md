@@ -8,7 +8,7 @@
 
 当前原型版本：**1.06**。详细变化见 [1.06 更新说明](docs/UPDATE_1.06.md)。
 
-[软件介绍](docs/INTRODUCTION.md) · [公开发布准备](docs/PUBLIC_LAUNCH_PLAN.md)
+[软件介绍](docs/INTRODUCTION.md) · [公开发布准备](docs/PUBLIC_LAUNCH_PLAN.md) · [授权推进与候选安装包](docs/AUTHORIZATION_NEXT_STEPS.md)
 
 原型已实现五位置自由组合、单行布局、日夜外观、系统托盘和桌面避让。实时行情、体育数据及队徽的对外使用权限仍在核查，当前源码中的数据适配器不代表已经获得分发许可。请勿把开发构建当作公开获授权的正式版传播。
 
