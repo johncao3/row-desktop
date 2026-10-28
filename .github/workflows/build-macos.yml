@@ -1,0 +1,32 @@
+name: Build ROW macOS preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/**'
+      - '.github/workflows/build-macos.yml'
+permissions:
+  contents: read
+concurrency:
+  group: row-macos-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Test and build universal app
+        run: bash macos/build-macos.sh
+      - name: Save unsigned preview for hardware testing
+        uses: actions/upload-artifact@v7
+        with:
+          name: ROW-1.06-macOS-preview
+          path: |
+            macos/dist/*/ROW-1.06-macOS-preview.zip
+            macos/dist/*/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7

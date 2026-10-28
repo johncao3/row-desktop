@@ -30,3 +30,8 @@ live-*.png
 
 # Maintainer-only authorization correspondence, if added later.
 /private/
+
+# macOS generated files
+/macos/.build/
+/macos/dist/
+.DS_Store

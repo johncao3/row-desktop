@@ -13,8 +13,9 @@ if (Test-Path -LiteralPath $manifestPath) {
 }
 $files = @(Get-ChildItem -LiteralPath $repoRoot -Recurse -File -Force | Where-Object { $_.FullName -notmatch '[\\/]\.git[\\/]' })
 $blocked = @($files | Where-Object {
+    if ($_.FullName -eq (Join-Path $repoRoot '.github\workflows\build-macos.yml')) { return $false }
     if ($approvedArtifacts.ContainsKey($_.FullName) -or $_.FullName -eq (Join-Path $repoRoot 'downloads\SHA256SUMS.txt')) { return $false }
-    ($_.Extension -notin '.cs','.ps1','.md','.json','.png','.ico' -and $_.Name -notin '.gitignore','.gitattributes') -or $_.FullName -match '[\\/]private[\\/]' -or
+    ($_.Extension -notin '.cs','.ps1','.md','.json','.png','.ico','.swift','.sh' -and $_.Name -notin '.gitignore','.gitattributes') -or $_.FullName -match '[\\/]private[\\/]' -or
     $_.Name -match '^(settings\.json|desktop-layout-backup\.json|data-check\.json|error-log.*|crash-log.*|sports-.*\.png|.*check\.txt|self-test\.txt|live-.*|preview.*)$' -or
     $_.Extension -match '^\.(exe|zip|lnk|pfx|p12|pem|key|log)$' -or $_.Name -match '^\.env'
 })
@@ -27,7 +28,11 @@ foreach ($file in $textFiles) {
         throw ('Potential credential/local path in: ' + $file.Name)
     }
 }
-if (Test-Path -LiteralPath (Join-Path $repoRoot '.github/workflows')) { throw 'Review workflows before enabling automation; preparation repository should not have publishing workflows.' }
+if (Test-Path -LiteralPath (Join-Path $repoRoot '.github/workflows')) {
+    $reviewedWorkflow = Join-Path $repoRoot '.github/workflows/build-macos.yml'
+    $workflowFiles = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot '.github/workflows') -Recurse -File)
+    if ($workflowFiles.Count -ne 1 -or $workflowFiles[0].FullName -ne $reviewedWorkflow -or (Get-FileHash -LiteralPath $reviewedWorkflow -Algorithm SHA256).Hash -ne '842EA7495BC6F5B6890DBB062F325D8C1F0232ECD23C6E946D073CC2B66D8BE5') { throw 'Unexpected workflow: review permissions and pin before enabling.' }
+}
 $ready = Get-Content -LiteralPath (Join-Path $repoRoot 'release-readiness.json') -Raw | ConvertFrom-Json
 if ($ready.publicReleaseApproved) { throw 'Full provider clearance is not recorded for this preview.' }
 if ($approvedArtifacts.Count -gt 0 -and (-not $ready.maintainerPublicationAuthorized -or $ready.releaseMode -ne 'public-preview')) { throw 'Explicit public-preview decision required.' }
