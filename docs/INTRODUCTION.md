@@ -30,8 +30,8 @@ ROW 是一款 Windows 桌面顶部信息栏，把你关注的市场与比赛，�
 
 ## 版本与下载
 
-当前原型版本为 **1.06**。公开下载正在准备中，尚未开放。
+当前版本为 **1.06 公开测试版**。[下载安装包](https://github.com/johncao3/row-desktop/raw/refs/heads/main/downloads/ROW-1.06-Setup.exe)。
 
-正式下载将提供 Windows 压缩包、版本说明和 SHA256 校验值。最终数据源、许可范围、兼容性及签名情况会在发布时明确列出。
+下载提供 Windows 安装器、版本说明和 SHA256 校验值。当前使用腾讯行情、CoinLore 与 ESPN；第三方使用范围仍在核对，安装包未签名。详见 RELEASE_1.06.md。
 
 无 ROW 账号系统、广告或自建遥测服务。设置保存在本机；数据请求会直接发送给相应服务提供方。详见 [隐私说明](../PRIVACY.md)。

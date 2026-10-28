@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $ready = Get-Content -LiteralPath (Join-Path $repoRoot 'release-readiness.json') -Raw | ConvertFrom-Json
-if (-not $ready.publicReleaseApproved) { throw 'RELEASE BLOCKED: maintainer has not approved public release. See docs/DATA_RIGHTS.md.' }
+if (-not $ready.publicReleaseApproved) { throw 'Full release clearance is not recorded. An explicitly authorized public preview uses Build-Candidate.ps1 -PublicPreview; source approvals remain pending.' }
 if ($ready.softwareLicense.status -ne 'approved' -or [string]::IsNullOrWhiteSpace($ready.softwareLicense.evidence)) { throw 'RELEASE BLOCKED: software distribution license is not recorded.' }
 if (@($ready.sources).Count -ne 4) { throw 'RELEASE BLOCKED: expected all four source/logo reviews.' }
 foreach ($source in $ready.sources) {

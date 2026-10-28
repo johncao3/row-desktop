@@ -1,11 +1,37 @@
 {
   "version": "1.06",
   "publicReleaseApproved": false,
-  "softwareLicense": { "status": "pending", "evidence": "" },
+  "softwareLicense": {
+    "status": "personal-use-preview",
+    "evidence": "LICENSE-STATUS.md"
+  },
   "sources": [
-    { "name": "Tencent quotes", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
-    { "name": "CoinLore API", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
-    { "name": "ESPN scoreboard", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" },
-    { "name": "Team logos", "status": "pending", "evidence": "", "review": "docs/DATA_RIGHTS.md" }
-  ]
+    {
+      "name": "Tencent quotes",
+      "status": "pending",
+      "evidence": "",
+      "review": "docs/DATA_RIGHTS.md"
+    },
+    {
+      "name": "CoinLore API",
+      "status": "pending",
+      "evidence": "",
+      "review": "docs/DATA_RIGHTS.md"
+    },
+    {
+      "name": "ESPN scoreboard",
+      "status": "pending",
+      "evidence": "",
+      "review": "docs/DATA_RIGHTS.md"
+    },
+    {
+      "name": "Team logos",
+      "status": "pending",
+      "evidence": "",
+      "review": "docs/DATA_RIGHTS.md"
+    }
+  ],
+  "maintainerPublicationAuthorized": true,
+  "releaseMode": "public-preview",
+  "publicationDecision": "2026-10-28: maintainer explicitly requested direct publication; third-party statuses remain pending, not approved."
 }
