@@ -24,7 +24,7 @@ cat > "$output/ROW.app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleIconFile</key><string>ROW</string>
 <key>CFBundleDisplayName</key><string>ROW</string>
 <key>CFBundleVersion</key><string>106</string>
-<key>CFBundleShortVersionString</key><string>1.06-mac-preview</string>
+<key>CFBundleShortVersionString</key><string>1.6.0</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
@@ -44,8 +44,9 @@ fi
 codesign --force --sign - "$output/ROW.app"
 codesign --verify --deep --strict "$output/ROW.app"
 plutil -lint "$output/ROW.app/Contents/Info.plist"
-lipo -verify_arch arm64 x86_64 "$output/ROW.app/Contents/MacOS/ROW"
+lipo "$output/ROW.app/Contents/MacOS/ROW" -verify_arch arm64 x86_64
 cp README.md "$output/README.md"
 ditto -c -k --sequesterRsrc --keepParent "$output/ROW.app" "$output/ROW-1.06-macOS-preview.zip"
 (cd "$output" && shasum -a 256 ROW-1.06-macOS-preview.zip > SHA256SUMS.txt)
 printf 'Built local, ad-hoc signed, NOT notarized preview:\n%s\n' "$output/ROW-1.06-macOS-preview.zip"
+
