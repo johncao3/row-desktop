@@ -49,4 +49,3 @@ cp README.md "$output/README.md"
 ditto -c -k --sequesterRsrc --keepParent "$output/ROW.app" "$output/ROW-1.06-macOS-preview.zip"
 (cd "$output" && shasum -a 256 ROW-1.06-macOS-preview.zip > SHA256SUMS.txt)
 printf 'Built local, ad-hoc signed, NOT notarized preview:\n%s\n' "$output/ROW-1.06-macOS-preview.zip"
-
