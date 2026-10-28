@@ -75,7 +75,12 @@ final class FloatingPanel: NSPanel {
     }
     func applicationWillTerminate(_ notification: Notification){refreshTimer?.invalidate();clockTimer?.invalidate();rotateTimer?.invalidate();if let hotKey=hotKey{UnregisterEventHotKey(hotKey)};if let handler=hotKeyHandler{RemoveEventHandler(handler)}}
 }
-let application=NSApplication.shared
-let delegate=AppDelegate()
-application.delegate=delegate
-application.run()
+@main @MainActor struct ROWMain {
+    static func main() {
+        let application=NSApplication.shared
+        let delegate=AppDelegate()
+        application.delegate=delegate
+        withExtendedLifetime(delegate) { application.run() }
+    }
+}
+
