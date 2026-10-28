@@ -94,7 +94,10 @@ import RowCore
         let watches=settings.watches
         var codes=Set(watches.filter{$0.id.hasPrefix("stock:")}.map{String($0.id.dropFirst(6))})
         for group in ["A股","美股"] where watches.contains(where:{$0.id=="auto:"+group}) {codes.formUnion(RowLogic.seeds.filter{$0.group==group}.map{String($0.id.dropFirst(6))})}
-        var result=codes.sorted().map { code in Job(id:"stock:"+code,url:"https://qt.gtimg.cn/q="+code,parse:{try FeedParser.stock($0,code:code)}) }
+        var result=codes.sorted().map { code -> Job in
+            let wireCode=(try? RowLogic.stockCode(code)) ?? code
+            return Job(id:"stock:"+code,url:"https://qt.gtimg.cn/q="+wireCode,parse:{try FeedParser.stock($0,code:wireCode)})
+        }
         var coins=Set(watches.filter{$0.id.hasPrefix("coin:")}.map{String($0.id.dropFirst(5))})
         if watches.contains(where:{$0.id=="auto:加密"}) {coins.formUnion(["90","80"])}
         let ids=Array(coins).sorted(); if !ids.isEmpty {result.append(Job(id:"coins",url:"https://api.coinlore.net/api/ticker/?id="+ids.joined(separator:","),parse:{try FeedParser.coins($0,ids:ids)}))}

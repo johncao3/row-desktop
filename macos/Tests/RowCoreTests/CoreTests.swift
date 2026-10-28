@@ -4,8 +4,9 @@ import XCTest
 final class CoreTests: XCTestCase {
     func testStockCodesAndPreferences() throws {
         XCTAssertEqual(try RowLogic.stockCode("600519"),"sh600519")
-        XCTAssertEqual(try RowLogic.stockCode("AAPL"),"usaapl")
-        XCTAssertEqual(try RowLogic.stockCode("us.INX"),"us.inx")
+        XCTAssertEqual(try RowLogic.stockCode("AAPL"),"usAAPL")
+        XCTAssertEqual(try RowLogic.stockCode("usaapl"),"usAAPL")
+        XCTAssertEqual(try RowLogic.stockCode("us.inx"),"us.INX")
         XCTAssertThrowsError(try RowLogic.stockCode("../../file"))
         var settings=Preferences();settings.watches=[]
         XCTAssertEqual(try JSONDecoder().decode(Preferences.self,from:JSONEncoder().encode(settings)).validated().watches.count,0)

@@ -51,7 +51,7 @@ public enum RowLogic {
         if s.range(of:"^(sh|sz|bj)[0-9]{6}$",options:.regularExpression) != nil { return s }
         if s.range(of:"^[0-9]{6}$",options:.regularExpression) != nil { return (s.hasPrefix("6") || s.hasPrefix("5") || s.hasPrefix("9") ? "sh" : s.hasPrefix("4") || s.hasPrefix("8") ? "bj" : "sz")+s }
         let ticker=s.hasPrefix("us") ? String(s.dropFirst(2)) : s
-        if ticker.range(of:"^[a-z.][a-z0-9.]{0,14}$",options:.regularExpression) != nil { return "us"+ticker }
+        if ticker.range(of:"^[a-z.][a-z0-9.]{0,14}$",options:.regularExpression) != nil { return "us"+ticker.uppercased() }
         throw RowError.invalid("输入 A 股代码或美股代码，例如 600519、sz000001、AAPL")
     }
     public static func followed(_ watch: Watch, items: [RowItem], now: Date=Date()) -> RowItem? {

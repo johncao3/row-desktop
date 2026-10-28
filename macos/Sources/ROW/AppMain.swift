@@ -49,7 +49,8 @@ final class FloatingPanel: NSPanel {
         store.screenNames=Dictionary(NSScreen.screens.map{(screenID($0),$0.localizedName)},uniquingKeysWith:{first,_ in first})
         guard let screen=NSScreen.screens.first(where:{screenID($0)==store.settings.screenID}) ?? NSScreen.screens.first else{return}
         let frame=screen.visibleFrame
-        panel.setFrame(NSRect(x:frame.minX,y:frame.maxY-40,width:frame.width,height:40),display:true)
+        let top=min(frame.maxY,screen.frame.maxY-screen.safeAreaInsets.top)
+        panel.setFrame(NSRect(x:frame.minX,y:top-40,width:frame.width,height:40),display:true)
     }
     @objc func spaceChanged(){if !hidden{place();panel.orderFrontRegardless()}}
     @objc func toggle(){hidden.toggle();if hidden{panel.orderOut(nil)}else{place();panel.orderFrontRegardless()}}
@@ -83,4 +84,3 @@ final class FloatingPanel: NSPanel {
         withExtendedLifetime(delegate) { application.run() }
     }
 }
-
