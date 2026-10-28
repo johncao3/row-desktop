@@ -45,12 +45,12 @@ public partial class Bar : Form {
     protected override bool ShowWithoutActivation{get{return true;}}
     public Bar(Settings s):this(s,true){}
     public Bar(Settings s,bool live){
-        settings=s;interactive=live;Text="ROW 1.05";Icon=Brand.LoadIcon();Font=new Font("Microsoft YaHei UI",9);AutoScaleMode=AutoScaleMode.None;
+        settings=s;interactive=live;Text="ROW 1.06";Icon=Brand.LoadIcon();Font=new Font("Microsoft YaHei UI",9);AutoScaleMode=AutoScaleMode.None;
         BackColor=Bg;ForeColor=Ink;FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;DoubleBuffered=true;StartPosition=FormStartPosition.Manual;
         callback=DesktopDock.RegisterWindowMessage("ROW.Appbar.101");taskbarRestart=DesktopDock.RegisterWindowMessage("TaskbarCreated");
-        var menu=new ContextMenuStrip();menu.Items.Add("显示 / 隐藏  Ctrl+Alt+B",null,(o,e)=>Toggle());menu.Items.Add("设置与自选",null,(o,e)=>Configure());
+        var menu=new ContextMenuStrip();menu.Items.Add("显示 / 隐藏  Ctrl+Alt+B",null,(o,e)=>Toggle());menu.Items.Add("我的关注",null,(o,e)=>Configure());
         menu.Items.Add("暂停 / 开启轮播",null,(o,e)=>{settings.Rotate=!settings.Rotate;Save();Invalidate();});menu.Items.Add("退出",null,(o,e)=>Close());ContextMenuStrip=menu;menu.Font=new Font("Microsoft YaHei UI",9);menu.ShowImageMargin=false;menu.Opening+=(o,e)=>{menu.Renderer=new MenuRenderer(new Palette(Light));};
-        tray=new NotifyIcon{Icon=Icon,Text="ROW 1.05 · Ctrl+Alt+B 显示 / 隐藏",Visible=live,ContextMenuStrip=menu};tray.MouseClick+=(o,e)=>{if(e.Button==MouseButtons.Left)ShowMenu(true);};
+        tray=new NotifyIcon{Icon=Icon,Text="ROW 1.06 · Ctrl+Alt+B 显示 / 隐藏",Visible=live,ContextMenuStrip=menu};tray.MouseClick+=(o,e)=>{if(e.Button==MouseButtons.Left)ShowMenu(true);};
         refreshTimer.Interval=60000;refreshTimer.Tick+=async(o,e)=>{if(!closing)await RefreshFeeds();};
         rotateTimer.Interval=12000;rotateTimer.Tick+=(o,e)=>{if(settings.Rotate&&!Bounds.Contains(Cursor.Position)){page++;Invalidate();}};
         layoutTimer.Interval=2000;layoutTimer.Tick+=(o,e)=>{if(closing)return;BackColor=Bg;Invalidate();if(registered&&Visible){DesktopDock.SetWindowPos(Handle,new IntPtr(-1),0,0,0,0,0x13);desktopIcons.Avoid(Bounds,DesktopDock.WorkArea(SelectedScreen.Bounds));DesktopDock.KeepWindowsBelow(Handle,Bounds,SelectedScreen.Bounds,IntPtr.Zero);}};
@@ -60,7 +60,12 @@ public partial class Bar : Form {
         Shown+=async(o,e)=>{if(!interactive||dockTest)return;ready=true;desktopIcons.Restore();DesktopDock.RegisterHotKey(Handle,1,0x4003,(uint)Keys.B);Place();refreshTimer.Start();rotateTimer.Start();layoutTimer.Start();await RefreshFeeds();};
         Width=SelectedScreen.Bounds.Width;Height=LogicalHeight;Location=SelectedScreen.Bounds.Location;Opacity=1;
     }
-    void Save(){try{File.WriteAllText(Path.Combine(Base,"settings.json"),new JavaScriptSerializer().Serialize(settings),Encoding.UTF8);}catch(Exception e){MessageBox.Show(this,"设置未保存："+e.Message);}}
+    bool Save(){
+        string temp=settingsPath+"."+Guid.NewGuid().ToString("N")+".tmp";
+        try{File.WriteAllText(temp,new JavaScriptSerializer().Serialize(settings),Encoding.UTF8);if(File.Exists(settingsPath))File.Replace(temp,settingsPath,null);else File.Move(temp,settingsPath);return true;}
+        catch(Exception e){ReportError(e);if(interactive)MessageBox.Show(this,"设置未保存："+e.Message);return false;}
+        finally{try{if(File.Exists(temp))File.Delete(temp);}catch{}}
+    }
     void ReleaseDock(){if(registered&&IsHandleCreated){registered=false;DesktopDock.Remove(Handle);}if(interactive)desktopIcons.Restore();}
     void QueuePlace(){if(queued||closing||!IsHandleCreated)return;queued=true;BeginInvoke((Action)(()=>{queued=false;if(Visible&&ready)Place();}));}
     void Place(){

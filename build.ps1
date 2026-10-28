@@ -7,6 +7,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Icon compilation failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed.' }
 & $compiler /nologo /target:winexe /optimize+ "/out:$PSScriptRoot\ROW.exe" "/win32icon:$PSScriptRoot\assets\ROW.ico" "/resource:$PSScriptRoot\assets\ROW.ico,ROW.ico" /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Net.Http.dll /reference:System.Web.Extensions.dll /reference:Microsoft.CSharp.dll "$PSScriptRoot\source\*.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }
-Write-Output "Built ROW 1.05: $PSScriptRoot\ROW.exe"
+Write-Output "Built ROW 1.06: $PSScriptRoot\ROW.exe"
 
 

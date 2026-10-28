@@ -41,7 +41,7 @@ public static class Feed {
     static HttpClient MakeClient() {
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
         var c = new HttpClient(); c.Timeout = TimeSpan.FromSeconds(14);
-        c.DefaultRequestHeaders.UserAgent.ParseAdd("ROW/1.05 (personal desktop ticker)"); return c;
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("ROW/1.06 (personal desktop ticker)"); return c;
     }
     public static object Json(string s) { return new JavaScriptSerializer { MaxJsonLength=8388608 }.DeserializeObject(s); }
     public static object Get(object obj, params string[] path) {
@@ -160,7 +160,7 @@ static class Program {
         try{if(File.Exists(file))settings=new JavaScriptSerializer().Deserialize<Settings>(File.ReadAllText(file));}catch{ }
         if(settings==null)settings=new Settings();
         if(settings.Version<2){var codes=Feed.Tokens(settings.Stocks??new Settings().Stocks);settings.Stocks=string.Join(",",codes.Where(c=>!c.StartsWith("us",StringComparison.OrdinalIgnoreCase)).Concat(new[]{"us.INX","us.IXIC","us.DJI"}).Concat(codes.Where(c=>c.StartsWith("us",StringComparison.OrdinalIgnoreCase))).Distinct(StringComparer.OrdinalIgnoreCase));settings.Top=true;settings.Compact=false;settings.Theme="auto";settings.Opacity=100;settings.Version=2;}
-        if(settings.Slots==null||settings.Slots.Count!=5||settings.Slots.Any(s=>s==null||string.IsNullOrEmpty(s.Key)||string.IsNullOrEmpty(s.Group)))settings.Slots=new Settings().Slots;settings.Version=105;
+        if(settings.Slots==null||settings.Slots.Count>5||settings.Slots.Any(s=>s==null||string.IsNullOrEmpty(s.Key)||string.IsNullOrEmpty(s.Group)))settings.Slots=new Settings().Slots;settings.Version=106;
         if(args.Length>0&&args[0]=="--catalog-check"){var coins=MarketCatalog.Coins().GetAwaiter().GetResult();var probe=new Settings{Stocks="sh600519,sz000001,usTSLA,usQQQ",CryptoIds="90,80,58"};var batches=Task.WhenAll(Feed.Jobs(probe)).GetAwaiter().GetResult();File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"catalog-check.txt"),"Coin catalog: "+coins.Count+"; XRP="+coins.Any(c=>c.Key=="coin:58")+Environment.NewLine+string.Join(Environment.NewLine,batches.Select(b=>b.Group+" "+b.Source+": "+b.Items.Count+" items "+b.Error)));if(batches.Any(b=>b.Error!=""))Environment.ExitCode=1;return;}
         if(args.Length>0&&args[0]=="--check") {Batch[] batches=Task.WhenAll(Feed.Jobs(settings)).GetAwaiter().GetResult();File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"data-check.json"),new JavaScriptSerializer().Serialize(batches),Encoding.UTF8);Environment.ExitCode=batches.Any(b=>b.Error!="")?1:0;return;}
         if(args.Length>0&&args[0]=="--desktop-check"){try{File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"desktop-check.txt"),new DesktopIcons().Inspect());}catch(Exception ex){File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"desktop-check.txt"),ex.ToString());Environment.ExitCode=1;}return;}

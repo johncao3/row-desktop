@@ -32,7 +32,7 @@ public partial class Bar {
         }finally{settings.Slots=previous;data=old;page=oldPage;}
     }
     Tuple<Item,bool> PickSlot(int index){
-        Slot slot=settings.Slots[index];if(slot.Key.StartsWith("auto:"))return Pick(slot.Group);
+        if(index>=settings.Slots.Count)return Tuple.Create(new Item{Key="empty:",Name="＋",Value="添加关注",Group="",Detail="点击打开我的关注"},false); Slot slot=settings.Slots[index];if(slot.Key.StartsWith("auto:"))return Pick(slot.Group);
         if(slot.Key.StartsWith("team:")){
             Item match=FollowedMatch(slot,data.SelectMany(b=>b.Items));
             if(match!=null){var batch=data.First(b=>b.Items.Contains(match));return Tuple.Create(match,batch.Error!=""||(Feed.Now-batch.Fetched).TotalMinutes>3);}
@@ -42,52 +42,6 @@ public partial class Bar {
         foreach(var batch in data){var item=batch.Items.FirstOrDefault(x=>string.Equals(x.Key,slot.Key,StringComparison.OrdinalIgnoreCase));if(item!=null)return Tuple.Create(item,batch.Error!=""||(Feed.Now-batch.Fetched).TotalMinutes>3);}
         return Tuple.Create(new Item{Key=slot.Key,Group=slot.Group,Name=slot.Name,Value=slot.Key.StartsWith("game:")?"赛程已过期":"等待数据",Detail=slot.Key.StartsWith("game:")?"此场比赛已不在近三日赛程内，可在自选中换一场。":"检查连接或在自选中重新查询。",Source=slot.Group=="加密"?"CoinLore":slot.Group=="A股"||slot.Group=="美股"?"腾讯行情":"ESPN"},true);
     }
-    Surface MakeSettings(){
-        var f=new Surface("设置",Colors,new Size(820,716));f.Heading("设置与自选","选五个关注对象，股票、币种与比赛自由搭配");
-        var selected=settings.Slots.Select(s=>new Slot{Key=s.Key,Name=s.Name,Group=s.Group}).ToList();
-        var catalog=MarketCatalog.Seeds();catalog.AddRange(new[]{"A股","美股","加密","NBA","足球"}.Select(g=>new Slot{Key="auto:"+g,Name=g+" · 自动轮播",Group=g}));Action rebuild=()=>{foreach(var item in data.SelectMany(b=>b.Items).Where(i=>!string.IsNullOrEmpty(i.Key))){var old=catalog.FirstOrDefault(c=>c.Key==item.Key);if(old!=null)catalog.Remove(old);catalog.Add(new Slot{Key=item.Key,Name=item.Name,Group=item.Group});}foreach(var slot in selected.Where(s=>!s.Key.StartsWith("auto:")&&!catalog.Any(c=>c.Key==s.Key)))catalog.Add(slot);};rebuild();
-        Action<int> statusForSlot=n=>{}; var slots=new Button[5];Action repaint=()=>{for(int i=0;i<5;i++){slots[i].Text=(i+1)+"  "+selected[i].Name;slots[i].BackColor=Colors.Soft;slots[i].ForeColor=Ink;slots[i].Invalidate();}};
-        for(int i=0;i<5;i++){int n=i;slots[i]=f.ButtonAt("",24+i*156,108,148,44,()=>{statusForSlot(n);},false);}repaint();
-        f.LabelAt("选择下面的内容 → 添加到顶部；上方仅预览五个位置",24,161,772,22,12,true);
-        var group=new ComboBox{Bounds=new Rectangle(24,194,126,30),DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Colors.Soft,ForeColor=Ink};group.Items.AddRange(new object[]{"全部","A股","美股","加密","NBA","足球"});group.SelectedIndex=0;StyleCombo(group);f.Controls.Add(group);
-        var search=new TextBox{Bounds=new Rectangle(164,194,280,30),BackColor=Colors.Soft,ForeColor=Ink,BorderStyle=BorderStyle.FixedSingle};f.Controls.Add(search);
-        var day=new ComboBox{Bounds=new Rectangle(458,194,136,30),DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Colors.Soft,ForeColor=Ink};day.Items.AddRange(new object[]{"今日比赛","近三日比赛"});day.SelectedIndex=0;StyleCombo(day);f.Controls.Add(day);
-        var query=f.ButtonAt("查询股票代码",608,192,188,32,()=>{},false);
-        var list=new ListView{Bounds=new Rectangle(24,238,772,206),View=View.Details,FullRowSelect=true,MultiSelect=false,HideSelection=false,BackColor=Bg,ForeColor=Ink,BorderStyle=BorderStyle.FixedSingle};list.Columns.Add("名称 / 比赛",242);list.Columns.Add("类别 / 代码",155);list.Columns.Add("最近报价 / 比分",150);list.Columns.Add("状态 / 时间",195);f.Controls.Add(list);
-        var status=f.LabelAt("常用股票 + 已添加自选；更多股票输入代码查询。比赛按北京时间筛选。",24,452,772,22,11,true);
-        Action render=()=>{if(f.IsDisposed)return;string q=search.Text.Trim();string category=Convert.ToString(group.SelectedItem);list.BeginUpdate();list.Items.Clear();foreach(var c in catalog.Where(c=>(category=="全部"||c.Group==category)&&(q==""||(c.Name+" "+c.Key).IndexOf(q,StringComparison.OrdinalIgnoreCase)>=0))){var item=data.SelectMany(b=>b.Items).FirstOrDefault(i=>i.Key==c.Key);if(c.Key.StartsWith("game:")&&day.SelectedIndex==0&&(item==null||!MarketCatalog.Today(item,Feed.Now)))continue;var row=new ListViewItem(c.Name){Tag=c};row.SubItems.Add(c.Group+" · "+c.Key.Substring(c.Key.IndexOf(':')+1));row.SubItems.Add(item==null?"选入后加载":item.Value);row.SubItems.Add(item==null?"":item.Home!=null?item.Day+" "+item.Status:item.Change.HasValue?item.Change.Value.ToString("+0.00;-0.00;0.00")+"%":"");list.Items.Add(row);}list.EndUpdate();};group.SelectedIndexChanged+=(o,e)=>render();search.TextChanged+=(o,e)=>render();day.SelectedIndexChanged+=(o,e)=>render();
-        statusForSlot=n=>{status.Text="位置 "+(n+1)+"："+selected[n].Name+"。从下方列表选择内容，再点击添加即可替换。";};
-        Action<Slot> choosePosition=choice=>{
-            if(f.IsDisposed||choice==null)return;
-            int n=ChooseOption(f,"放到哪个位置",Enumerable.Range(0,5).Select(i=>"位置 "+(i+1)+" · "+selected[i].Name).ToArray());
-            if(n<0||f.IsDisposed)return;
-            selected[n]=new Slot{Key=choice.Key,Name=choice.Name,Group=choice.Group};repaint();status.Text="已设为 "+choice.Name+"；保存后生效。";
-        };
-        Action assign=()=>{if(list.SelectedItems.Count==0){status.Text="先从列表选择一项。";return;}choosePosition((Slot)list.SelectedItems[0].Tag);};
-        f.ButtonAt("添加到顶部…",24,486,178,36,assign,true);list.DoubleClick+=(o,e)=>assign();
-        var coinButton=f.ButtonAt("加载全部币种",214,486,178,36,()=>{},false);coinButton.Click+=async(o,e)=>{coinButton.Enabled=false;status.Text="正在加载 CoinLore 币种目录…";try{var coins=await MarketCatalog.Coins();if(f.IsDisposed)return;catalog.RemoveAll(c=>c.Group=="加密");catalog.AddRange(coins);group.SelectedItem="加密";render();status.Text="已加载 "+coins.Count+" 个币种，输入名称或代码筛选；同名币以 ID 区分。";}catch(Exception ex){if(!f.IsDisposed)status.Text=ex.Message;}finally{if(!f.IsDisposed)coinButton.Enabled=true;}};
-        var games=f.ButtonAt("刷新今日比赛",404,486,178,36,()=>{},false);games.Click+=async(o,e)=>{games.Enabled=false;status.Text="正在刷新 NBA 和已启用足球联赛…";try{if(refreshing){status.Text="主栏正在更新，完成后再点击刷新。";return;}await RefreshFeeds();if(f.IsDisposed)return;catalog.RemoveAll(c=>c.Key.StartsWith("game:"));rebuild();render();bool failed=data.Where(b=>b.Group=="NBA"||b.Group=="足球").Any(b=>b.Error!="");status.Text=failed?"部分赛程加载失败，已保留可用内容，请稍后重试。":"赛程已刷新；今日列表为空表示已启用赛事今天暂无比赛。";}catch(Exception ex){ReportError(ex);if(!f.IsDisposed)status.Text="刷新失败，请重试。";}finally{if(!f.IsDisposed)games.Enabled=true;}};
-        var follow=f.ButtonAt("跟随球队…",594,486,202,36,()=>{},false);
-        follow.Click+=(o,e)=>{
-            if(list.SelectedItems.Count==0){status.Text="先选一场比赛，再选择要跟随的球队。";return;}
-            var chosen=(Slot)list.SelectedItems[0].Tag;var item=data.SelectMany(b=>b.Items).FirstOrDefault(x=>x.Key==chosen.Key);
-            if(item==null||item.Home==null||string.IsNullOrEmpty(item.HomeId)||string.IsNullOrEmpty(item.AwayId)){status.Text="请选一场已加载的比赛；股票和币种直接添加即可。";return;}
-            int team=ChooseOption(f,"跟随哪支球队",new[]{item.Home,item.Away});
-            if(team>=0&&!f.IsDisposed)choosePosition(TeamSlot(item,team==0));
-        };
-        query.Click+=async(o,e)=>{query.Enabled=false;try{string code=MarketCatalog.Normalize(search.Text);string g=code.StartsWith("us")?"美股":"A股";status.Text="正在查询 "+code+"…";var batch=await Feed.Load(g,"https://qt.gtimg.cn/q="+code,t=>Feed.ParseStocks(t,new[]{code},g),"腾讯行情 · "+code,true);if(f.IsDisposed)return;if(batch.Error!="")throw new Exception("未取得该代码报价，请检查代码或网络。其他自选不受影响。");var item=batch.Items.Single();data.RemoveAll(b=>b.Source==batch.Source);data.Add(batch);rebuild();group.SelectedItem=g;search.Text=item.Name;render();status.Text="找到 "+item.Name+"（"+code+"），点击添加到顶部。";}catch(Exception ex){if(!f.IsDisposed)status.Text=ex.Message;}finally{if(!f.IsDisposed)query.Enabled=true;}};
-        f.LabelAt("足球联赛",24,537,110,22,12,true);var leaguePanel=new FlowLayoutPanel{Bounds=new Rectangle(112,531,684,58),WrapContents=true};f.Controls.Add(leaguePanel);
-        var leagueChoices=new Dictionary<string,string>{{"eng.1","英超"},{"esp.1","西甲"},{"uefa.champions","欧冠"},{"ita.1","意甲"},{"ger.1","德甲"},{"fra.1","法甲"},{"chn.1","中超"}};
-        foreach(string code in Feed.Tokens(settings.Leagues))if(!leagueChoices.ContainsKey(code))leagueChoices.Add(code,code);
-        foreach(var entry in leagueChoices)leaguePanel.Controls.Add(new CheckBox{Text=entry.Value,Tag=entry.Key,Checked=Feed.Tokens(settings.Leagues).Contains(entry.Key),Width=85,Height=23});
-        
-        var theme=new ComboBox{Bounds=new Rectangle(24,598,228,30),DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Colors.Soft,ForeColor=Ink};theme.Items.AddRange(new object[]{"自动 · 白天浅色 / 夜间深色","浅色","深色"});theme.SelectedIndex=settings.Theme=="light"?1:settings.Theme=="dark"?2:0;StyleCombo(theme);f.Controls.Add(theme);
-        Screen[] screens=Screen.AllScreens;var monitor=new ComboBox{Bounds=new Rectangle(264,598,218,30),DropDownStyle=ComboBoxStyle.DropDownList,FlatStyle=FlatStyle.Flat,BackColor=Colors.Soft,ForeColor=Ink};foreach(var s in screens)monitor.Items.Add((s.Primary?"主屏幕":"屏幕")+" "+s.Bounds.Width+" × "+s.Bounds.Height);monitor.SelectedIndex=Math.Max(0,Array.FindIndex(screens,s=>s.DeviceName==SelectedScreen.DeviceName));StyleCombo(monitor);f.Controls.Add(monitor);
-        var quiet=new CheckBox{Text="单色涨跌",Checked=settings.Quiet,Bounds=new Rectangle(494,598,130,30)};var rotate=new CheckBox{Text="分类自动轮播",Checked=settings.Rotate,Bounds=new Rectangle(636,598,160,30)};f.Controls.AddRange(new Control[]{quiet,rotate});
-        f.LabelAt("股票：腾讯行情  ·  币种：CoinLore  ·  比赛：ESPN\n每 60 秒更新；非交易下单软件，行情可能延迟。",24,653,575,44,11,true);
-        var save=f.ButtonAt("保存五个位置",618,653,178,40,()=>{},true);save.Click+=async(o,e)=>{var ls=leaguePanel.Controls.OfType<CheckBox>().Where(c=>c.Checked).Select(c=>(string)c.Tag).ToArray();if(ls.Length>8||ls.Any(l=>!Regex.IsMatch(l,@"^[a-z]+\.[a-z0-9]+$"))){status.Text="联赛格式有误；用逗号分隔，最多 8 个。";return;}if(refreshing){status.Text="正在更新，请稍后保存。";return;}settings.Slots=selected;settings.Stocks=string.Join(",",Feed.Tokens(settings.Stocks).Concat(selected.Where(s=>s.Key.StartsWith("stock:")).Select(s=>s.Key.Substring(6))).Distinct(StringComparer.OrdinalIgnoreCase));settings.CryptoIds=string.Join(",",selected.Where(s=>s.Key.StartsWith("coin:")).Select(s=>s.Key.Substring(5)).Concat(Feed.Tokens(settings.CryptoIds)).Distinct().Take(30));settings.Leagues=string.Join(",",ls);settings.Theme=theme.SelectedIndex==1?"light":theme.SelectedIndex==2?"dark":"auto";settings.Monitor=screens[monitor.SelectedIndex].DeviceName;settings.Quiet=quiet.Checked;settings.Rotate=rotate.Checked;settings.Version=105;Save();ReleaseDock();Place();f.Close();await RefreshFeeds();};f.Shown+=async(o,e)=>{if(!interactive)return;while(refreshing&&!f.IsDisposed)await Task.Delay(200);if(f.IsDisposed)return;rebuild();render();};render();return f;
-    }
+
 }
 }
-
-

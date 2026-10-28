@@ -64,19 +64,19 @@ public partial class Bar {
                 TextAt(g,item.Change.Value.ToString("+0.00;-0.00;0.00")+"%",fs-1,settings.Quiet?Muted:item.Change>=0?Up:Down,new Rectangle(content.Right-percentWidth,0,percentWidth,40),false,true);
             }else TextAt(g,item.Name+"  "+item.Value,fs,Muted,content,false,true);
             DateTime changed;if(item.Key!=null&&scoreChanges.TryGetValue(item.Key,out changed)&&(Feed.Now-changed).TotalSeconds<12)using(var p=new Pen(Brand.Orange,2))g.DrawLine(p,r.Left+12,37,r.Right-12,37); if(stale)using(var b=new SolidBrush(Warning))g.FillEllipse(b,r.Right-6,6,3,3);
-            Item selected=item;bool old=stale;hits.Add(Tuple.Create(r,(Action)(()=>ShowDetail(selected,old))));shown.Add(Tuple.Create(r,item,stale));
+            Item selected=item;bool old=stale;hits.Add(Tuple.Create(r,(Action)(()=>{if(selected.Key=="empty:")Configure();else ShowDetail(selected,old);})));shown.Add(Tuple.Create(r,item,stale));
         }
         var more=new Rectangle(w-34,4,30,32);if(more.Contains(mouse))Brand.Fill(g,more,7,Colors.Soft);TextAt(g,"···",18,Muted,more,true,true);hits.Add(Tuple.Create(more,(Action)(()=>ShowMenu(false))));
         using(var p=new Pen(Line))g.DrawLine(p,0,39,w,39);
     }
     void UpdateTip(){var item=shown.FirstOrDefault(x=>x.Item1.Contains(mouse));string text=item==null?"":(item.Item3?"旧数据 · ":"")+item.Item2.Name+"\n"+item.Item2.Value+(item.Item2.Change.HasValue?"  "+item.Item2.Change.Value.ToString("+0.00;-0.00;0.00")+"%":"")+"\n"+item.Item2.Detail+"\n"+item.Item2.Source+" · "+item.Item2.SourceTime+"\n"+ReceivedText(item.Item2)+"\n"+QuoteAge(item.Item2)+"\n点击展开详情";if(text!=currentTip){currentTip=text;tip.SetToolTip(this,text);}}
     Surface MakeMenu(){
-        var f=new Surface("控制中心",Colors,new Size(328,435));f.Heading("ROW", "1.05  /  时刻在场");
+        var f=new Surface("控制中心",Colors,new Size(328,435));f.Heading("ROW", "1.06  /  时刻在场");
         if(desktopIcons.Status!="")f.LabelAt(desktopIcons.Status,24,128,280,20,10,true);bool error=data.Any(b=>b.Error!="");f.LabelAt(dockError!=""?dockError:refreshing?"正在更新行情…":error?"部分数据离线 · 保留最近报价":lastAttempt==DateTime.MinValue?"等待连接":lastAttempt.ToString("HH:mm")+" 更新 · 每 60 秒刷新",24,109,280,24,12,true);
         f.ButtonAt("刷新行情",24,151,280,40,async()=>{f.Close();await RefreshFeeds();},false);
         f.ButtonAt(settings.Rotate?"暂停轮播":"开启轮播",24,199,136,40,()=>{settings.Rotate=!settings.Rotate;Save();f.Close();},false);
         f.ButtonAt("下一组  →",168,199,136,40,()=>{page++;Invalidate();f.Close();},false);
-        f.ButtonAt("设置与自选",24,247,280,40,()=>{f.Close();Configure();},true);
+        f.ButtonAt("我的关注",24,247,280,40,()=>{f.Close();Configure();},true);
         f.ButtonAt(Visible?"隐藏信息栏":"显示信息栏",24,295,136,40,()=>{f.Close();Toggle();},false);
         f.ButtonAt("退出 ROW",168,295,136,40,()=>{f.Close();Close();},false);
         f.LabelAt("Ctrl + Alt + B   显示 / 隐藏",24,360,280,22,12,true);f.LabelAt("滚轮切换 · 悬停查看 · 点击展开",24,386,280,22,12,true);return f;
@@ -97,7 +97,7 @@ public partial class Bar {
         bool fixture=data.Count==0;if(fixture){data=new List<Batch>{new Batch{Group="A股",Fetched=Feed.Now,Items=new List<Item>{new Item{Group="A股",Name="上证指数",Value="3,609.23",Change=-1.33,Source="示例",Detail="演示数据"}}},new Batch{Group="美股",Fetched=Feed.Now,Items=new List<Item>{new Item{Group="美股",Name="标普500",Value="7,663.43",Change=-1.21,Source="示例",Detail="演示数据"}}},new Batch{Group="加密",Fetched=Feed.Now,Items=new List<Item>{new Item{Group="加密",Name="BTC",Value="$81,880",Change=2.14,Source="示例",Detail="过去24小时"}}},new Batch{Group="NBA",Fetched=Feed.Now,Items=new List<Item>{new Item{Key="game:NBA:demo",Day=Feed.Now.ToString("yyyy-MM-dd"),League="NBA",HomeId="13",AwayId="9",Group="NBA",Name="湖人 · 勇士",Home="湖人",Away="勇士",Value="98 : 94",Status="Q4 03:12",Detail="NBA · 第四节",Source="示例"}}},new Batch{Group="足球",Fetched=Feed.Now,Items=new List<Item>{new Item{Key="game:足球:demo",Day=Feed.Now.ToString("yyyy-MM-dd"),League="英超",HomeId="359",AwayId="363",Group="足球",Name="阿森纳 · 切尔西",Home="阿森纳",Away="切尔西",Value="2 : 1",Status="73′",Detail="英超 · 进行中",Source="示例"}}}};}
         string oldTheme=settings.Theme;scale=1;Height=40;
         foreach(int width in new[]{800,1024,1440,1536,1920})foreach(string theme in new[]{"light","dark"}){Width=width;settings.Theme=theme;page=-100;Snapshot(Path.Combine(folder,"preview-"+width+"-"+theme+".png"));if(shown.Count!=5||shown.Max(x=>x.Item1.Width)-shown.Min(x=>x.Item1.Width)>1)throw new Exception("five equal groups");for(int i=0;i<hits.Count;i++)for(int j=i+1;j<hits.Count;j++)if(hits[i].Item1.IntersectsWith(hits[j].Item1))throw new Exception("overlapping targets");}
-        settings.Theme="light";CaptureForm(MakeMenu(),Path.Combine(folder,"preview-menu.png"));CaptureForm(MakeSettings(),Path.Combine(folder,"preview-settings.png"));CaptureForm(MakeDetail(data.SelectMany(b=>b.Items).First(),false),Path.Combine(folder,"preview-detail.png"));var sportsSettings=MakeSettings();sportsSettings.Controls.OfType<ComboBox>().First().SelectedItem="NBA";CaptureForm(sportsSettings,Path.Combine(folder,"preview-sports-settings.png"));settings.Theme="dark";CaptureForm(MakeSettings(),Path.Combine(folder,"preview-settings-dark.png"));
+        settings.Theme="light";CaptureForm(MakeMenu(),Path.Combine(folder,"preview-menu.png"));CaptureForm(MakeSettings(),Path.Combine(folder,"preview-settings.png"));CaptureForm(MakeDetail(data.SelectMany(b=>b.Items).First(),false),Path.Combine(folder,"preview-detail.png"));var sportsSettings=MakeSettings();sportsSettings.Controls.OfType<TextBox>().First().Text="湖人";CaptureForm(sportsSettings,Path.Combine(folder,"preview-sports-settings.png"));settings.Theme="dark";CaptureForm(MakeSettings(),Path.Combine(folder,"preview-settings-dark.png"));
         foreach(float dpi in new[]{1.25f,1.5f,2f}){scale=dpi;Width=1920;Height=(int)(40*dpi);Snapshot(Path.Combine(folder,"preview-dpi-"+(int)(dpi*100)+".png"));}
         settings.Theme=oldTheme;scale=1;Height=40;if(!IsLight("auto",7)||IsLight("auto",19))throw new Exception("theme boundaries");
         File.WriteAllText(Path.Combine(folder,"ui-check.txt"),"PASS: five equal columns, 40 DIP, light/dark, widths 800/1024/1440/1536/1920, nonoverlapping click targets, 125/150/200% DPI, menu/settings/detail rendering.\nPreview data: "+(fixture?"DEMO fixtures; not live quotes":"live feed responses"),Encoding.UTF8);
