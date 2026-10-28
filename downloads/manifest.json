@@ -6,6 +6,14 @@
       "path": "downloads/ROW-1.06-Setup.exe",
       "sha256": "ab5b094f79d48cbfa56145fca97902693ecd2d31a4c8bac00f804820b00f40db",
       "size": 158208
+    },
+    {
+      "path": "downloads/ROW-1.06-macOS-preview.zip",
+      "sha256": "46954a79f524499d14b0d99fd3e348d40e9081e18eaa2006d55af9663b184c5f",
+      "buildRun": "https://github.com/johncao3/row-desktop/actions/runs/40628998339",
+      "notarized": false,
+      "channel": "mac-native-preview",
+      "size": 832951
     }
   ],
   "channel": "public-preview",

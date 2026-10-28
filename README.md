@@ -16,7 +16,7 @@ Windows 10 / 11，需系统中可用的 .NET Framework 4.5 或更新版本。当
 
 ## macOS 移植预览
 
-[原生 Mac 源码与构建说明](macos/README.md)。目标 macOS 13+、Apple Silicon/Intel 双架构；编译与实机验证状态请以 Actions 结果和 Mac 说明为准。Mac 悬浮条暂不自动移动其他应用窗口。
+**[下载 Mac 原生预览版](https://github.com/johncao3/row-desktop/raw/refs/heads/main/downloads/ROW-1.06-macOS-preview.zip)** · [Mac 安装与构建说明](macos/README.md)。支持 macOS 13+、Apple Silicon/Intel 双架构；已通过 macOS 编译与核心测试，尚待实机界面验收。未做 Apple Developer ID 签名或公证；Mac 悬浮条暂不自动移动其他应用窗口。
 
 ## 能做什么
 

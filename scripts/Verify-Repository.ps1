@@ -5,7 +5,7 @@ $approvedArtifacts = @{}
 if (Test-Path -LiteralPath $manifestPath) {
     $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
     foreach ($artifact in $manifest.artifacts) {
-        if ($artifact.path -ne 'downloads/ROW-1.06-Setup.exe' -or $artifact.sha256 -notmatch '^[a-f0-9]{64}$') { throw 'Unexpected release artifact.' }
+        if ($artifact.path -notin @('downloads/ROW-1.06-Setup.exe','downloads/ROW-1.06-macOS-preview.zip') -or $artifact.sha256 -notmatch '^[a-f0-9]{64}$') { throw 'Unexpected release artifact.' }
         $artifactPath = Join-Path $repoRoot $artifact.path
         if ((Get-Item -LiteralPath $artifactPath).Length -ne $artifact.size -or (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $artifact.sha256) { throw 'Release artifact hash/size mismatch.' }
         $approvedArtifacts[[IO.Path]::GetFullPath($artifactPath)] = $true
